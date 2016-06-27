@@ -1,0 +1,9 @@
+---
+# scala download mirror
+scala_mirror: "http://downloads.lightbend.com/scala"
+# scala binary archive
+scala_binary_archive: scala-{{ scala_version }}.tgz
+
+# download settings
+download_delay: 10
+download_retries: 5

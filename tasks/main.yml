@@ -1,0 +1,88 @@
+---
+- name: assert platform is supported
+  assert:
+    that:
+      - ansible_architecture in ['x86_64']
+      - ansible_os_family in ['RedHat']
+
+- name: set os name
+  set_fact:
+    os_name: linux
+  when: ansible_system == 'Linux'
+
+- name: set os architecture
+  set_fact:
+    os_arch: x64
+  when: ansible_architecture == 'x86_64'
+
+- name: ensure download directory exists
+  file: path="{{ scala_download_dir }}" state=directory
+
+- name: download Scala binary archive (tgz)
+  get_url:
+    url: "{{ scala_mirror }}/{{ scala_version }}/{{ scala_binary_archive }}"
+    dest: "{{ scala_download_dir }}/{{ scala_binary_archive }}"
+    owner: root
+    group: root
+    mode: "u=rwx,go=rx"
+  register: scala_redis_get
+  until: "'OK' in scala_redis_get.msg or 'file already exists' in scala_redis_get.msg"
+  delay: "{{ download_delay }}"
+  retries: "{{ download_retries }}"
+
+- name: ensure installation directory exists
+  file:
+    path: "{{ scala_install_dir }}/scala-{{ scala_version }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "u=rwx,go=rx"
+
+- name: install 'unzip', if necessary
+  package: name=unzip state=present
+
+- name: install Scala binary archive (tgz)
+  unarchive:
+    src: "{{ scala_download_dir }}/{{ scala_binary_archive }}"
+    dest: "{{ scala_install_dir }}"
+    owner: root
+    group: root
+    copy: no
+
+- block:
+  - name: create default link
+    file:
+      src: "{{ scala_install_dir }}/scala-{{ scala_version }}"
+      dest: "{{ scala_install_dir }}/{{ scala_link_default }}"
+      force: true
+      state: link
+
+  - name: create alternatives links
+    alternatives:
+      name: "{{ item }}"
+      link: "/usr/bin/{{ item }}"
+      path: "{{ scala_install_dir }}/{{ scala_link_default }}/bin/{{ item }}"
+    with_items:
+      - fsc
+      - scala
+      - scalac
+      - scaladoc
+      - scalap
+
+  when: scala_link_binaries
+
+- block:
+  - name: ensure '/etc/profile.d' exists
+    file: path="/etc/profile.d" state=directory
+
+  - name: export SCALA_HOME
+    template: src=scala.sh.j2 dest=/etc/profile.d/scala.sh mode=a+x
+
+  when: scala_set_scala_home
+
+- name: remove temporary downloaded files, if requested
+  file: path="{{ scala_download_dir }}/{{ item }}" state=absent
+  with_items:
+    - "{{ scala_binary_archive }}"
+  ignore_errors: true
+  when: scala_download_cleanup
