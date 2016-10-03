@@ -1,5 +1,7 @@
 # Ansible Role - Scala
 
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/wolffaxn/ansible-role-scala/master/LICENSE)
+
 Installs Scala for RedHat/CentOS linux servers.
 
 ## Requirements
