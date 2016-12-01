@@ -12,7 +12,7 @@ None.
 
 Available variables are listed below, along with default values:
 
-    scala_version: 2.11.8
+    scala_version: 2.12.0
 
     scala_download_dir: /tmp
     scala_download_cleanup: true
